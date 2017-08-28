@@ -1,11 +1,6 @@
 package org.albaross.agents4j.island;
 
-import static org.albaross.agents4j.island.IslandLocation.*;
-import static org.albaross.agents4j.island.IslandWeather.*;
-
 public class IslandPerception {
-
-	public static final IslandPerception ORIGIN = new IslandPerception(16, AT_HQ, CLOUDS, CLOUDS, 4, true);
 
 	private final int battery;
 	private final IslandLocation location;
@@ -13,14 +8,17 @@ public class IslandPerception {
 	private final IslandWeather prediction;
 	private final int change;
 	private final boolean secured;
+	private final boolean complete;
 
-	public IslandPerception(int battery, IslandLocation location, IslandWeather weather, IslandWeather prediction, int change, boolean secured) {
+	public IslandPerception(int battery, IslandLocation location, IslandWeather weather, IslandWeather prediction, int change, boolean secured,
+			boolean complete) {
 		this.battery = battery;
 		this.location = location;
 		this.weather = weather;
 		this.prediction = prediction;
 		this.change = change;
 		this.secured = secured;
+		this.complete = complete;
 	}
 
 	public int getBattery() {
@@ -47,12 +45,17 @@ public class IslandPerception {
 		return secured;
 	}
 
+	public boolean isComplete() {
+		return complete;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + battery;
 		result = prime * result + change;
+		result = prime * result + (complete ? 1231 : 1237);
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
 		result = prime * result + ((prediction == null) ? 0 : prediction.hashCode());
 		result = prime * result + (secured ? 1231 : 1237);
@@ -73,6 +76,8 @@ public class IslandPerception {
 			return false;
 		if (change != other.change)
 			return false;
+		if (complete != other.complete)
+			return false;
 		if (location != other.location)
 			return false;
 		if (prediction != other.prediction)
@@ -87,7 +92,7 @@ public class IslandPerception {
 	@Override
 	public String toString() {
 		return "[" + battery + ", " + location + ", " + weather + " -> " + prediction + " in " + change + " ticks, "
-				+ (secured ? "site secured" : "site not secured") + "]";
+				+ (secured ? "site secured" : "site not secured") + ", " + (complete ? "site complete" : "site not complete") + "]";
 	}
 
 }
