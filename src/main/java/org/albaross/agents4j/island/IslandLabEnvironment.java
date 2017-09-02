@@ -96,15 +96,14 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 	}
 
 	@Override
-	public IslandPerception createPerception(long agentId) {
-		int idx = (int) agentId;
-		return new IslandPerception((int) Math.ceil(batteries[idx] / 8.0), locations[idx], weather, prediction, change, secured, complete);
+	public IslandPerception createPerception(int agentId) {
+		return new IslandPerception((int) Math.ceil(batteries[agentId] / 8.0), locations[agentId], weather, prediction, change, secured,
+				complete);
 	}
 
 	@SuppressWarnings("incomplete-switch")
 	@Override
-	public void executeAction(long agentId, IslandAction action) {
-		int idx = (int) agentId;
+	public void executeAction(int agentId, IslandAction action) {
 		boolean slow = false;
 		boolean shelter = false;
 
@@ -114,20 +113,20 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 			slow = true;
 		}
 
-		switch (locations[idx]) {
+		switch (locations[agentId]) {
 		case AT_HQ:
 		case IN_CAVE:
 			shelter = true;
 		}
 
-		switch (locations[idx]) {
+		switch (locations[agentId]) {
 		case AT_HQ:
 			switch (action) {
 			case CHARGE_BATTERY:
-				batteries[idx] = Math.min(batteries[idx] + 8, 32);
+				batteries[agentId] = Math.min(batteries[agentId] + 8, 32);
 				break;
 			case MOVE_TO_SITE:
-				locations[idx] = (slow ? ON_THE_WAY_1 : ON_THE_WAY_2);
+				locations[agentId] = (slow ? ON_THE_WAY_1 : ON_THE_WAY_2);
 				break;
 			}
 			break;
@@ -156,47 +155,47 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 				secured = false;
 				break;
 			case MOVE_TO_HQ:
-				locations[idx] = (slow ? ON_THE_WAY_3 : ON_THE_WAY_2);
+				locations[agentId] = (slow ? ON_THE_WAY_3 : ON_THE_WAY_2);
 				break;
 			case ENTER_CAVE:
-				locations[idx] = IN_CAVE;
+				locations[agentId] = IN_CAVE;
 				break;
 			}
 			break;
 		case IN_CAVE:
 			switch (action) {
 			case LEAVE_CAVE:
-				locations[idx] = AT_SITE;
+				locations[agentId] = AT_SITE;
 				break;
 			}
 			break;
 		case ON_THE_WAY_1:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[idx] = AT_HQ;
+				locations[agentId] = AT_HQ;
 				break;
 			case MOVE_TO_SITE:
-				locations[idx] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_3);
+				locations[agentId] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_3);
 				break;
 			}
 			break;
 		case ON_THE_WAY_2:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[idx] = (slow ? ON_THE_WAY_1 : AT_HQ);
+				locations[agentId] = (slow ? ON_THE_WAY_1 : AT_HQ);
 				break;
 			case MOVE_TO_SITE:
-				locations[idx] = (slow ? ON_THE_WAY_3 : AT_SITE);
+				locations[agentId] = (slow ? ON_THE_WAY_3 : AT_SITE);
 				break;
 			}
 			break;
 		case ON_THE_WAY_3:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[idx] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_1);
+				locations[agentId] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_1);
 				break;
 			case MOVE_TO_SITE:
-				locations[idx] = AT_SITE;
+				locations[agentId] = AT_SITE;
 				break;
 			}
 			break;
@@ -204,13 +203,13 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 			LOG.warn("unhandled action");
 		}
 
-		executeAftermath(idx, shelter);
+		executeAftermath(agentId, shelter);
 	}
 
-	protected void executeAftermath(int idx, boolean shelter) {
+	protected void executeAftermath(int agentId, boolean shelter) {
 		// charge battery with solar panel
 		if (weather == SUN && !shelter)
-			batteries[idx] = Math.min(batteries[idx] + 2, 32);
+			batteries[agentId] = Math.min(batteries[agentId] + 2, 32);
 
 		// lightning at the site
 		if (!secured && AT_SITE.equals(lightning)) {
@@ -221,24 +220,24 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 		}
 
 		// agent is struck by lightning
-		if (locations[idx].equals(lightning)) {
-			LOG.debug("agent {} was damaged", idx);
-			operable[idx] = false;
+		if (locations[agentId].equals(lightning)) {
+			LOG.debug("agent {} was damaged", agentId);
+			operable[agentId] = false;
 		}
 
-		if (batteries[idx] == 0) {
-			LOG.debug("agent {} ran out of energy", idx);
-			operable[idx] = false;
+		if (batteries[agentId] == 0) {
+			LOG.debug("agent {} ran out of energy", agentId);
+			operable[agentId] = false;
 		}
 
 		// bring agent to HQ for repair and recharge battery
-		if (!operable[idx]) {
-			locations[idx] = AT_HQ;
-			batteries[idx] = 32;
+		if (!operable[agentId]) {
+			locations[agentId] = AT_HQ;
+			batteries[agentId] = 32;
 		}
 
 		// discharge battery
-		batteries[idx] = Math.max(batteries[idx] - 1, 0);
+		batteries[agentId] = Math.max(batteries[agentId] - 1, 0);
 	}
 
 	protected boolean determineComplete() {
@@ -251,17 +250,17 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 	}
 
 	@Override
-	protected double getReward(long agentId) {
-		if (!operable[(int) agentId])
+	protected double getReward(int agentId) {
+		if (!operable[agentId])
 			return -100;
 
 		return terminationCriterion(agentId) ? 0 : -1;
 	}
 
 	@Override
-	public boolean terminationCriterion(long agentId) {
+	public boolean terminationCriterion(int agentId) {
 		// agent has to return to HQ after finishing work
-		return this.complete && locations[(int) agentId] == AT_HQ;
+		return this.complete && locations[agentId] == AT_HQ;
 	}
 
 	@Override
