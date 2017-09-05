@@ -6,17 +6,15 @@ public class IslandPerception {
 	private final IslandLocation location;
 	private final IslandWeather weather;
 	private final IslandWeather prediction;
-	private final int change;
 	private final boolean secured;
 	private final boolean complete;
 
-	public IslandPerception(int battery, IslandLocation location, IslandWeather weather, IslandWeather prediction, int change, boolean secured,
+	public IslandPerception(int battery, IslandLocation location, IslandWeather weather, IslandWeather prediction, boolean secured,
 			boolean complete) {
 		this.battery = battery;
 		this.location = location;
 		this.weather = weather;
 		this.prediction = prediction;
-		this.change = change;
 		this.secured = secured;
 		this.complete = complete;
 	}
@@ -37,10 +35,6 @@ public class IslandPerception {
 		return prediction;
 	}
 
-	public int getChange() {
-		return change;
-	}
-
 	public boolean isSecured() {
 		return secured;
 	}
@@ -54,7 +48,6 @@ public class IslandPerception {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + battery;
-		result = prime * result + change;
 		result = prime * result + (complete ? 1231 : 1237);
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
 		result = prime * result + ((prediction == null) ? 0 : prediction.hashCode());
@@ -74,8 +67,6 @@ public class IslandPerception {
 		IslandPerception other = (IslandPerception) obj;
 		if (battery != other.battery)
 			return false;
-		if (change != other.change)
-			return false;
 		if (complete != other.complete)
 			return false;
 		if (location != other.location)
@@ -91,8 +82,8 @@ public class IslandPerception {
 
 	@Override
 	public String toString() {
-		return "[" + battery + ", " + location + ", " + weather + " -> " + prediction + " in " + change + " ticks, "
-				+ (secured ? "site secured" : "site not secured") + ", " + (complete ? "site complete" : "site not complete") + "]";
+		return "IslandPerception [battery=" + battery + ", location=" + location + ", weather=" + weather + ", prediction=" + prediction
+				+ ", secured=" + secured + ", complete=" + complete + "]";
 	}
-
+	
 }

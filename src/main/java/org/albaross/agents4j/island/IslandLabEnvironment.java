@@ -54,6 +54,8 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	@Override
 	public void runEnvironment() {
+		super.runEnvironment();
+		
 		this.lightning = null;
 		Arrays.fill(this.operable, true);
 		this.change--;
@@ -97,8 +99,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	@Override
 	public IslandPerception createPerception(int agentId) {
-		return new IslandPerception((int) Math.ceil(batteries[agentId] / 8.0), locations[agentId], weather, prediction, change, secured,
-				complete);
+		return new IslandPerception((int) Math.ceil(batteries[agentId] / 8.0), locations[agentId], weather, prediction, secured, complete);
 	}
 
 	@SuppressWarnings("incomplete-switch")

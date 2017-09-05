@@ -14,7 +14,11 @@ public enum IslandAction {
 	private static final Random RND = new Random();
 
 	public static IslandAction randomAction() {
-		return IslandAction.values()[RND.nextInt(IslandAction.values().length)];
+		return values()[RND.nextInt(values().length)];
+	}
+
+	public static IslandAction decode(int code) {
+		return values()[code];
 	}
 
 }
