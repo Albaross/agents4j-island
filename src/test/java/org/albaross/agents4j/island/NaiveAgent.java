@@ -10,11 +10,15 @@ import java.util.Arrays;
 public class NaiveAgent {
 
 	public static void main(String[] args) {
+		long sum = 0;
 		IslandLabEnvironment env = new IslandLabEnvironment(Arrays.asList((p) -> {
-			return !p.isComplete() ? (p.getLocation() != AT_SITE ? MOVE_TO_SITE : ASSEMBLE_PARTS) : MOVE_TO_HQ;
+			return p.getSite() < IslandLabEnvironment.SITE_COMPLETE ? (p.getLocation() != AT_SITE ? MOVE_TO_SITE : ASSEMBLE_PARTS) : MOVE_TO_HQ;
 		}));
-		env.run();
-		System.out.println("rewards: " + env.getCumulative(0));
+		for (int r = 0; r < 2000000; r++) {
+			env.run();
+			sum += env.getCumulative(0);
+		}
+		System.out.println("rewards: " + (double) sum / 2000000);
 	}
 
 }

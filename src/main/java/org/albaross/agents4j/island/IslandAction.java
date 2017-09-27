@@ -21,4 +21,8 @@ public enum IslandAction {
 		return values()[code];
 	}
 
+	public static int encode(IslandAction action) {
+		return action.ordinal();
+	}
+
 }

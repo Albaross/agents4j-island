@@ -31,9 +31,9 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	protected Random rnd = new Random();
 
-	protected int[] site;
+	public static final int SITE_COMPLETE = 16 * 8;
+	protected int site;
 	protected boolean secured;
-	protected boolean complete;
 
 	protected IslandWeather weather;
 	protected IslandWeather prediction;
@@ -42,22 +42,23 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	protected int[] batteries;
 	protected IslandLocation[] locations;
-	protected boolean[] operable;
+	protected boolean[] agentOperable;
+	protected boolean[] componentAssembled;
 
 	public IslandLabEnvironment(List<Agent<IslandPerception, IslandAction>> agents) {
 		super(agents);
-		this.site = new int[16];
+		this.site = 0;
 		this.batteries = new int[agents.size()];
 		this.locations = new IslandLocation[agents.size()];
-		this.operable = new boolean[agents.size()];
+		this.agentOperable = new boolean[agents.size()];
+		this.componentAssembled = new boolean[agents.size()];
 	}
 
 	@Override
 	public void runEnvironment() {
-		super.runEnvironment();
-		
 		this.lightning = null;
-		Arrays.fill(this.operable, true);
+		Arrays.fill(this.agentOperable, true);
+		Arrays.fill(this.componentAssembled, false);
 		this.change--;
 
 		if (change == 0) {
@@ -67,7 +68,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 		}
 
 		if (weather == THUNDERSTORM) {
-			switch (rnd.nextInt(16)) {
+			switch (rnd.nextInt(12)) {
 			case 0:
 				this.lightning = AT_SITE;
 				break;
@@ -99,7 +100,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	@Override
 	public IslandPerception createPerception(int agentId) {
-		return new IslandPerception((int) Math.ceil(batteries[agentId] / 8.0), locations[agentId], weather, prediction, secured, complete);
+		return new IslandPerception(site / 16, secured, batteries[agentId] / 8, locations[agentId], weather, prediction);
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -133,21 +134,13 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 			break;
 		case AT_SITE:
 			switch (action) {
-			case ASSEMBLE_PARTS: {
-				int part = 0;
-				int rem = (slow ? 2 : 4);
-
-				while (rem > 0 && part < site.length) {
-					if (site[part] < 8) {
-						site[part]++;
-						rem--;
-					} else {
-						part++;
-					}
+			case ASSEMBLE_PARTS:
+				if (this.site < SITE_COMPLETE) {
+					int oldCount = this.site % 8;
+					this.site = Math.min(this.site + (slow ? 1 : 2), SITE_COMPLETE);
+					if ((this.site % 8) > oldCount)
+						componentAssembled[agentId] = true;
 				}
-
-				this.complete = determineComplete();
-			}
 				break;
 			case COVER_SITE:
 				secured = true;
@@ -214,25 +207,24 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 		// lightning at the site
 		if (!secured && AT_SITE.equals(lightning)) {
-			int part = rnd.nextInt(site.length);
-			LOG.debug("part {} was damaged", part);
-			site[part] = -8;
-			this.complete = false;
+			int damage = rnd.nextInt(16);
+			this.site = Math.max(this.site - damage, 0);
+			LOG.debug("site was damaged");
 		}
 
 		// agent is struck by lightning
 		if (locations[agentId].equals(lightning)) {
 			LOG.debug("agent {} was damaged", agentId);
-			operable[agentId] = false;
+			agentOperable[agentId] = false;
 		}
 
 		if (batteries[agentId] == 0) {
 			LOG.debug("agent {} ran out of energy", agentId);
-			operable[agentId] = false;
+			agentOperable[agentId] = false;
 		}
 
 		// bring agent to HQ for repair and recharge battery
-		if (!operable[agentId]) {
+		if (!agentOperable[agentId]) {
 			locations[agentId] = AT_HQ;
 			batteries[agentId] = 32;
 		}
@@ -241,36 +233,36 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 		batteries[agentId] = Math.max(batteries[agentId] - 1, 0);
 	}
 
-	protected boolean determineComplete() {
-		for (int p : site) {
-			if (p < 8)
-				return false;
-		}
-
-		return true;
-	}
-
 	@Override
 	protected double getReward(int agentId) {
-		if (!operable[agentId])
+		if (!agentOperable[agentId])
 			return -100;
 
-		return terminationCriterion(agentId) ? 0 : -1;
+		if (!secured && AT_SITE.equals(lightning)) {
+			return -10;
+		}
+
+		if (terminationCriterion(agentId))
+			return 100;
+
+		if (componentAssembled[agentId])
+			return 0;
+
+		return -1;
 	}
 
 	@Override
 	public boolean terminationCriterion(int agentId) {
 		// agent has to return to HQ after finishing work
-		return this.complete && locations[agentId] == AT_HQ;
+		return this.site == SITE_COMPLETE && locations[agentId] == AT_HQ;
 	}
 
 	@Override
 	public void reboot() {
 		super.reboot();
 
-		Arrays.fill(this.site, 0);
+		this.site = 0;
 		this.secured = true;
-		this.complete = false;
 
 		this.weather = CLOUDS;
 		this.prediction = generateWeather();
@@ -279,7 +271,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 		Arrays.fill(this.batteries, 31);
 		Arrays.fill(this.locations, AT_HQ);
-		Arrays.fill(this.operable, true);
+		Arrays.fill(this.agentOperable, true);
 	}
 
 }
