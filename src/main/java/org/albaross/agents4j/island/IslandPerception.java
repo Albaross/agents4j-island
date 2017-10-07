@@ -88,9 +88,10 @@ public class IslandPerception implements Encodable {
 
 	@Override
 	public double[] toArray() {
-		return new double[] { (double) site / 16, secured ? 1 : 0, (double) battery / 4,
-				(double) location.ordinal() / IslandLocation.values().length, (double) weather.ordinal() / IslandWeather.values().length,
-				(double) prediction.ordinal() / IslandWeather.values().length, 1 };
+		return new double[] { (double) (site + 1) / 4, secured ? 1 : 0, (double) (battery + 1) / 4,
+				(double) (location.ordinal() + 1) / IslandLocation.values().length,
+				(double) (weather.ordinal() + 1) / IslandWeather.values().length,
+				(double) (prediction.ordinal() + 1) / IslandWeather.values().length };
 	}
 
 }

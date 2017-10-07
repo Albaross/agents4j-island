@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.albaross.agents4j.core.Agent;
-import org.albaross.agents4j.learning.RLEnvironment;
+import org.albaross.agents4j.core.BasicEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +25,13 @@ import org.slf4j.LoggerFactory;
  * @author Manuel Barbi
  *
  */
-public class IslandLabEnvironment extends RLEnvironment<IslandPerception, IslandAction> {
+public class IslandLabEnvironment extends BasicEnvironment<IslandPerception, IslandAction> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IslandLabEnvironment.class);
 
 	protected Random rnd = new Random();
 
-	public static final int SITE_COMPLETE = 16 * 8;
+	public static final int SITE_COMPLETE = 8 * 8;
 	protected int site;
 	protected boolean secured;
 
@@ -48,6 +48,12 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 	public IslandLabEnvironment(List<Agent<IslandPerception, IslandAction>> agents) {
 		super(agents);
 		this.site = 0;
+		this.secured = false;
+
+		this.weather = CLOUDS;
+		this.prediction = IslandWeather.CLOUDS;
+		this.change = 5;
+
 		this.batteries = new int[agents.size()];
 		this.locations = new IslandLocation[agents.size()];
 		this.agentOperable = new boolean[agents.size()];
@@ -100,7 +106,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	@Override
 	public IslandPerception createPerception(int agentId) {
-		return new IslandPerception(site / 16, secured, batteries[agentId] / 8, locations[agentId], weather, prediction);
+		return new IslandPerception(site / 8, secured, batteries[agentId] / 16, locations[agentId], weather, prediction);
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -206,7 +212,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 			batteries[agentId] = Math.min(batteries[agentId] + 2, 32);
 
 		// lightning at the site
-		if (!secured && AT_SITE.equals(lightning)) {
+		if (!secured && this.site < SITE_COMPLETE && AT_SITE.equals(lightning)) {
 			int damage = rnd.nextInt(16);
 			this.site = Math.max(this.site - damage, 0);
 			LOG.debug("site was damaged");
@@ -234,7 +240,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 	}
 
 	@Override
-	protected double getReward(int agentId) {
+	public double getReward(int agentId) {
 		if (!agentOperable[agentId])
 			return -100;
 

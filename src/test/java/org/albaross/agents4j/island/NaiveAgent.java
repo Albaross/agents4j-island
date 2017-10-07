@@ -16,9 +16,10 @@ public class NaiveAgent {
 		}));
 		for (int r = 0; r < 2000000; r++) {
 			env.run();
-			sum += env.getCumulative(0);
+			System.out.println(env.getCurrentTick());
+			sum += env.getCurrentTick();
 		}
-		System.out.println("rewards: " + (double) sum / 2000000);
+		System.out.println("ticks: " + sum / 2000000);
 	}
 
 }
