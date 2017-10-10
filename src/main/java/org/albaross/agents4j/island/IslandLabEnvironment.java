@@ -11,7 +11,6 @@ import static org.albaross.agents4j.island.IslandWeather.STORM_OR_RAIN;
 import static org.albaross.agents4j.island.IslandWeather.SUN;
 import static org.albaross.agents4j.island.IslandWeather.THUNDERSTORM;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -37,58 +36,16 @@ public class IslandLabEnvironment extends BasicEnvironment<IslandPerception, Isl
 
 	protected IslandWeather weather;
 	protected IslandWeather prediction;
-	protected int change;
-	protected IslandLocation lightning;
 
-	protected int[] batteries;
-	protected IslandLocation[] locations;
-	protected boolean[] agentOperable;
-	protected boolean[] componentAssembled;
+	protected int battery;
+	protected IslandLocation location;
+	protected double reward;
 
 	public IslandLabEnvironment(List<Agent<IslandPerception, IslandAction>> agents) {
 		super(agents);
-		this.site = 0;
-		this.secured = false;
 
-		this.weather = CLOUDS;
-		this.prediction = IslandWeather.CLOUDS;
-		this.change = 5;
-
-		this.batteries = new int[agents.size()];
-		this.locations = new IslandLocation[agents.size()];
-		this.agentOperable = new boolean[agents.size()];
-		this.componentAssembled = new boolean[agents.size()];
-	}
-
-	@Override
-	public void runEnvironment() {
-		this.lightning = null;
-		Arrays.fill(this.agentOperable, true);
-		Arrays.fill(this.componentAssembled, false);
-		this.change--;
-
-		if (change == 0) {
-			this.weather = (rnd.nextDouble() > 0.2) ? this.prediction : generateWeather();
-			this.prediction = generateWeather();
-			this.change = 4;
-		}
-
-		if (weather == THUNDERSTORM) {
-			switch (rnd.nextInt(12)) {
-			case 0:
-				this.lightning = AT_SITE;
-				break;
-			case 1:
-				this.lightning = ON_THE_WAY_1;
-				break;
-			case 2:
-				this.lightning = ON_THE_WAY_2;
-				break;
-			case 3:
-				this.lightning = ON_THE_WAY_3;
-				break;
-			}
-		}
+		if (agents.size() != 1)
+			throw new IllegalArgumentException("this environment does support only one agent at the moment");
 	}
 
 	protected IslandWeather generateWeather() {
@@ -106,47 +63,41 @@ public class IslandLabEnvironment extends BasicEnvironment<IslandPerception, Isl
 
 	@Override
 	public IslandPerception createPerception(int agentId) {
-		return new IslandPerception(site / 8, secured, batteries[agentId] / 16, locations[agentId], weather, prediction);
+		return new IslandPerception(site / 16, secured, battery / 8, location, weather, prediction);
+	}
+
+	@Override
+	public void executeAction(int agentId, IslandAction action) {
+		// discharge battery
+		battery = Math.max(battery - 1, 0);
+
+		// keep state of site
+		int keepSiteState = site % 8;
+
+		exec(action);
+		env(agentId, keepSiteState);
 	}
 
 	@SuppressWarnings("incomplete-switch")
-	@Override
-	public void executeAction(int agentId, IslandAction action) {
-		boolean slow = false;
-		boolean shelter = false;
+	protected void exec(IslandAction action) {
 
-		switch (weather) {
-		case STORM_OR_RAIN:
-		case THUNDERSTORM:
-			slow = true;
-		}
+		boolean slow = weather == STORM_OR_RAIN || weather == THUNDERSTORM;;
 
-		switch (locations[agentId]) {
-		case AT_HQ:
-		case IN_CAVE:
-			shelter = true;
-		}
-
-		switch (locations[agentId]) {
+		switch (location) {
 		case AT_HQ:
 			switch (action) {
 			case CHARGE_BATTERY:
-				batteries[agentId] = Math.min(batteries[agentId] + 8, 32);
+				battery = Math.min(battery + 8, 32);
 				break;
 			case MOVE_TO_SITE:
-				locations[agentId] = (slow ? ON_THE_WAY_1 : ON_THE_WAY_2);
+				location = (slow ? ON_THE_WAY_1 : ON_THE_WAY_2);
 				break;
 			}
 			break;
 		case AT_SITE:
 			switch (action) {
 			case ASSEMBLE_PARTS:
-				if (this.site < SITE_COMPLETE) {
-					int oldCount = this.site % 8;
-					this.site = Math.min(this.site + (slow ? 1 : 2), SITE_COMPLETE);
-					if ((this.site % 8) > oldCount)
-						componentAssembled[agentId] = true;
-				}
+				site = Math.min(site + (slow ? 1 : 2), SITE_COMPLETE);
 				break;
 			case COVER_SITE:
 				secured = true;
@@ -155,112 +106,113 @@ public class IslandLabEnvironment extends BasicEnvironment<IslandPerception, Isl
 				secured = false;
 				break;
 			case MOVE_TO_HQ:
-				locations[agentId] = (slow ? ON_THE_WAY_3 : ON_THE_WAY_2);
+				location = (slow ? ON_THE_WAY_3 : ON_THE_WAY_2);
 				break;
 			case ENTER_CAVE:
-				locations[agentId] = IN_CAVE;
+				location = IN_CAVE;
 				break;
 			}
 			break;
 		case IN_CAVE:
 			switch (action) {
 			case LEAVE_CAVE:
-				locations[agentId] = AT_SITE;
+				location = AT_SITE;
 				break;
 			}
 			break;
 		case ON_THE_WAY_1:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[agentId] = AT_HQ;
+				location = AT_HQ;
 				break;
 			case MOVE_TO_SITE:
-				locations[agentId] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_3);
+				location = (slow ? ON_THE_WAY_2 : ON_THE_WAY_3);
 				break;
 			}
 			break;
 		case ON_THE_WAY_2:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[agentId] = (slow ? ON_THE_WAY_1 : AT_HQ);
+				location = (slow ? ON_THE_WAY_1 : AT_HQ);
 				break;
 			case MOVE_TO_SITE:
-				locations[agentId] = (slow ? ON_THE_WAY_3 : AT_SITE);
+				location = (slow ? ON_THE_WAY_3 : AT_SITE);
 				break;
 			}
 			break;
 		case ON_THE_WAY_3:
 			switch (action) {
 			case MOVE_TO_HQ:
-				locations[agentId] = (slow ? ON_THE_WAY_2 : ON_THE_WAY_1);
+				location = (slow ? ON_THE_WAY_2 : ON_THE_WAY_1);
 				break;
 			case MOVE_TO_SITE:
-				locations[agentId] = AT_SITE;
+				location = AT_SITE;
 				break;
 			}
 			break;
 		default:
 			LOG.warn("unhandled action");
 		}
-
-		executeAftermath(agentId, shelter);
 	}
 
-	protected void executeAftermath(int agentId, boolean shelter) {
+	protected void env(int agentId, int keepSiteState) {
+
+		boolean shelter = (location == AT_HQ || location == IN_CAVE);
+
+		// assembled one component
+		reward = ((site % 8) > keepSiteState) ? 0.0 : -1.0;
+
 		// charge battery with solar panel
-		if (weather == SUN && !shelter)
-			batteries[agentId] = Math.min(batteries[agentId] + 2, 32);
+		if (!shelter && weather == SUN)
+			battery = Math.min(battery + 2, 32);
 
-		// lightning at the site
-		if (!secured && this.site < SITE_COMPLETE && AT_SITE.equals(lightning)) {
-			int damage = rnd.nextInt(16);
-			this.site = Math.max(this.site - damage, 0);
-			LOG.debug("site was damaged");
+		if (weather == THUNDERSTORM) {
+			// generate lightning
+			int loc = rnd.nextInt(12);
+			IslandLocation[] values = IslandLocation.values();
+			IslandLocation lightning = (loc < values.length) ? values[loc] : null;
+
+			// site was struck by lightning
+			if (!secured && this.site < SITE_COMPLETE && AT_SITE.equals(lightning)) {
+				int damage = rnd.nextInt(16);
+				this.site = Math.max(this.site - damage, 0);
+				LOG.info("site was damaged");
+				reward = -10.0;
+			}
+
+			// agent was struck by lightning
+			if (!shelter && location.equals(lightning)) {
+				LOG.info("agent {} was damaged", agentId);
+				location = AT_HQ;
+				battery = 32;
+				reward = -100.0;
+			}
 		}
 
-		// agent is struck by lightning
-		if (locations[agentId].equals(lightning)) {
-			LOG.debug("agent {} was damaged", agentId);
-			agentOperable[agentId] = false;
+		// low energy
+		if (battery == 0) {
+			LOG.info("agent {} ran out of energy", agentId);
+			location = AT_HQ;
+			battery = 32;
+			reward = -100.0;
 		}
 
-		if (batteries[agentId] == 0) {
-			LOG.debug("agent {} ran out of energy", agentId);
-			agentOperable[agentId] = false;
+		// generate next weather
+		if (tick % 4 == 0) {
+			weather = (rnd.nextDouble() > 0.2) ? prediction : generateWeather();
+			prediction = generateWeather();
 		}
-
-		// bring agent to HQ for repair and recharge battery
-		if (!agentOperable[agentId]) {
-			locations[agentId] = AT_HQ;
-			batteries[agentId] = 32;
-		}
-
-		// discharge battery
-		batteries[agentId] = Math.max(batteries[agentId] - 1, 0);
 	}
 
 	@Override
 	public double getReward(int agentId) {
-		if (!agentOperable[agentId])
-			return -100;
-
-		if (!secured && AT_SITE.equals(lightning)) {
-			return -10;
-		}
-
-		if (terminationCriterion(agentId))
-			return 100;
-
-		if (componentAssembled[agentId])
-			return 0;
-
-		return -1;
+		return reward;
 	}
 
 	@Override
 	public boolean terminationCriterion(int agentId) {
 		// agent has to return to HQ after finishing work
-		return this.site == SITE_COMPLETE && locations[agentId] == AT_HQ;
+		return this.site == SITE_COMPLETE && location == AT_HQ;
 	}
 
 	@Override
@@ -272,12 +224,16 @@ public class IslandLabEnvironment extends BasicEnvironment<IslandPerception, Isl
 
 		this.weather = CLOUDS;
 		this.prediction = generateWeather();
-		this.change = 5;
-		this.lightning = null;
 
-		Arrays.fill(this.batteries, 31);
-		Arrays.fill(this.locations, AT_HQ);
-		Arrays.fill(this.agentOperable, true);
+		this.battery = 32;
+		this.location = AT_HQ;
+
+		this.reward = 0.0;
+	}
+
+	@Override
+	public boolean supportsRL() {
+		return true;
 	}
 
 }
