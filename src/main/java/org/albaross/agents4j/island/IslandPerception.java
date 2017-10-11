@@ -1,15 +1,13 @@
 package org.albaross.agents4j.island;
 
-import org.deeplearning4j.rl4j.space.Encodable;
+public class IslandPerception {
 
-public class IslandPerception implements Encodable {
-
-	private final int site;
-	private final boolean secured;
-	private final int battery;
-	private final IslandLocation location;
-	private final IslandWeather weather;
-	private final IslandWeather prediction;
+	protected final int site;
+	protected final boolean secured;
+	protected final int battery;
+	protected final IslandLocation location;
+	protected final IslandWeather weather;
+	protected final IslandWeather prediction;
 
 	public IslandPerception(int site, boolean secured, int battery, IslandLocation location, IslandWeather weather, IslandWeather prediction) {
 		this.site = site;
@@ -83,15 +81,7 @@ public class IslandPerception implements Encodable {
 
 	@Override
 	public String toString() {
-		return "IslandPerception [" + site + ", " + secured + ", " + battery + ", " + location + ", " + weather + ", " + prediction + "]";
-	}
-
-	@Override
-	public double[] toArray() {
-		return new double[] { (double) (site + 1) / 4, secured ? 1 : 0, (double) (battery + 1) / 4,
-				(double) (location.ordinal() + 1) / IslandLocation.values().length,
-				(double) (weather.ordinal() + 1) / IslandWeather.values().length,
-				(double) (prediction.ordinal() + 1) / IslandWeather.values().length };
+		return "(" + site + ", " + secured + ", " + battery + ", " + location + ", " + weather + ", " + prediction + ")";
 	}
 
 }

@@ -4,19 +4,19 @@
 
 	<groupId>org.albaross</groupId>
 	<artifactId>agents4j-island</artifactId>
-	<version>1.2.1</version>
+	<version>2.0.1-SNAPSHOT</version>
 	<name>agents4j (island)</name>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.albaross</groupId>
 			<artifactId>agents4j-learning</artifactId>
-			<version>1.2.1</version>
+			<version>2.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.albaross</groupId>
 			<artifactId>agents4j-extraction</artifactId>
-			<version>1.2.1</version>
+			<version>2.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
