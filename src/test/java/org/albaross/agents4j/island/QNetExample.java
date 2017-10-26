@@ -17,7 +17,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
@@ -57,18 +56,17 @@ public class QNetExample {
 
 		MultiLayerNetwork net = new MultiLayerNetwork(mlnconf);
 		net.init();
-		net.setListeners(new StatsListener(statsStorage)/*, new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER)*/);
+		net.setListeners(new StatsListener(statsStorage)/* , new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER) */);
 
 		EncoderIslandPerception encoder = new EncoderIslandPerception(4);
 		BasicBuilder<IslandPerception, IslandAction> builder = new BasicBuilder<>();
 		builder.add(new EpsilonGreedyOperator<>(IslandAction::randomAction, 0.1));
 		builder.add(new QNetComponent<IslandPerception, IslandAction>(
-				new QNeg<IslandPerception, IslandAction>(net, encoder, IslandAction::encode, IslandAction::decode), 100000, 32));
+				new QNeg<IslandPerception, IslandAction>(net, encoder, IslandAction::encode, IslandAction::decode), 5000000, 32));
 		Agent<IslandPerception, IslandAction> agent = builder.getAgent();
 		IslandLabEnvironment env = new IslandLabEnvironment(Arrays.asList(agent));
-		env.setMaxSteps(50000);
 
-		for (int r = 0; r < 150000; r++) {
+		for (int r = 0; r < 20000000; r++) {
 			env.run();
 			System.out.println("round: " + r + ", rewards: " + env.getCumulative(0));
 		}
