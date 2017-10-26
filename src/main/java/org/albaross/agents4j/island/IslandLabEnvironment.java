@@ -16,7 +16,6 @@ import java.util.Random;
 
 import org.albaross.agents4j.core.Agent;
 import org.albaross.agents4j.learning.RLEnvironment;
-import org.albaross.agents4j.learning.utils.StateEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * @author Manuel Barbi
  *
  */
-public class IslandLabEnvironment extends RLEnvironment<IslandPerception, IslandAction> implements StateEncoder<IslandPerception> {
+public class IslandLabEnvironment extends RLEnvironment<IslandPerception, IslandAction> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IslandLabEnvironment.class);
 
@@ -191,13 +190,13 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 			if (!secured && this.site < SITE_COMPLETE && AT_SITE.equals(lightning)) {
 				int damage = rnd.nextInt(2 * PART);
 				this.site = Math.max(this.site - damage, 0);
-				LOG.info("site was damaged");
+				LOG.debug("site was damaged");
 				reward = -10.0;
 			}
 
 			// agent was struck by lightning
 			if (!shelter && location.equals(lightning)) {
-				LOG.info("agent {} was damaged", agentId);
+				LOG.debug("agent {} was damaged", agentId);
 				location = AT_HQ;
 				battery = FULL_BATTERY;
 				reward = -100.0;
@@ -206,7 +205,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 		// low energy
 		if (battery == 0) {
-			LOG.info("agent {} ran out of energy", agentId);
+			LOG.debug("agent {} ran out of energy", agentId);
 			location = AT_HQ;
 			battery = FULL_BATTERY;
 			reward = -100.0;
@@ -221,7 +220,7 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 
 	@Override
 	public double getReward(int agentId) {
-		return reward;
+		return !terminationCriterion(agentId) ? reward : 0;
 	}
 
 	@Override
@@ -244,18 +243,6 @@ public class IslandLabEnvironment extends RLEnvironment<IslandPerception, Island
 		this.location = AT_HQ;
 
 		this.reward = 0.0;
-	}
-
-	@Override
-	public double[] encode(IslandPerception state) {
-		return new double[] { //
-				(double) (state.site + 1) / RESOLUTION, //
-				(double) (state.secured ? 1 : 0), //
-				(double) (state.battery + 1) / RESOLUTION, //
-				(double) (state.location.ordinal() + 1) / IslandLocation.values().length, //
-				(double) (state.weather.ordinal() + 1) / IslandWeather.values().length, //
-				(double) (state.prediction.ordinal() + 1) / IslandWeather.values().length //
-		};
 	}
 
 }

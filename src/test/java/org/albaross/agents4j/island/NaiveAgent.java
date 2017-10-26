@@ -11,7 +11,7 @@ public class NaiveAgent {
 
 	public static void main(String[] args) {
 		long sum = 0;
-		IslandLabEnvironment env = new IslandLabEnvironment(Arrays.asList((p) -> {
+		IslandLabEnvironment env = new IslandLabEnvironment(Arrays.asList((p, t) -> {
 			return p.getSite() < IslandLabEnvironment.SITE_COMPLETE ? (p.getLocation() != AT_SITE ? MOVE_TO_SITE : ASSEMBLE_PARTS) : MOVE_TO_HQ;
 		}));
 		for (int r = 0; r < 2000000; r++) {
